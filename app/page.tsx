@@ -2,10 +2,57 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import Editor from "react-simple-code-editor";
+import Prism from "prismjs";
+import "prismjs/components/prism-c";
+import "prismjs/components/prism-cpp";
+import "prismjs/components/prism-csharp";
+import "prismjs/components/prism-java";
+import "prismjs/components/prism-python";
+import "prismjs/components/prism-typescript";
+import "prismjs/components/prism-go";
+import "prismjs/components/prism-rust";
+import "prismjs/components/prism-kotlin";
+import "prismjs/components/prism-swift";
+import "prismjs/components/prism-ruby";
+import "prismjs/components/prism-dart";
+import "prismjs/components/prism-scala";
+import "prismjs/components/prism-bash";
 import type { Algorithm } from "@/db/schema";
 
 const categories = ["すべて", "探索", "データ構造", "グラフ", "動的計画法", "数学", "文字列"];
-const languages = ["すべて", "C++", "Python", "Rust"];
+const languageOptions = [
+  { label: "C", grammar: "c", extension: "c" },
+  { label: "C++", grammar: "cpp", extension: "cpp" },
+  { label: "C#", grammar: "csharp", extension: "cs" },
+  { label: "Java", grammar: "java", extension: "java" },
+  { label: "Python", grammar: "python", extension: "py" },
+  { label: "JavaScript", grammar: "javascript", extension: "js" },
+  { label: "TypeScript", grammar: "typescript", extension: "ts" },
+  { label: "Go", grammar: "go", extension: "go" },
+  { label: "Rust", grammar: "rust", extension: "rs" },
+  { label: "Kotlin", grammar: "kotlin", extension: "kt" },
+  { label: "Swift", grammar: "swift", extension: "swift" },
+  { label: "Ruby", grammar: "ruby", extension: "rb" },
+  { label: "Dart", grammar: "dart", extension: "dart" },
+  { label: "Scala", grammar: "scala", extension: "scala" },
+  { label: "Shell", grammar: "bash", extension: "sh" },
+] as const;
+const languages = ["すべて", ...languageOptions.map(({ label }) => label)];
+const languageDetails = new Map<string, { grammar: string; extension: string }>(
+  languageOptions.map(({ label, grammar, extension }) => [label, { grammar, extension }]),
+);
+
+function highlightCode(code: string, language: string): string {
+  const grammarName = languageDetails.get(language)?.grammar ?? "plain";
+  const grammar = Prism.languages[grammarName] ?? Prism.languages.plain;
+  return Prism.highlight(code, grammar, grammarName);
+}
+
+function codeFileName(title: string, language: string): string {
+  const base = title.replace(/[（）\s]/g, "-").toLowerCase();
+  return `${base}.${languageDetails.get(language)?.extension ?? "txt"}`;
+}
 type SyncState = "loading" | "idle" | "saving" | "deleting" | "saved" | "deleted" | "error";
 
 export default function Home() {
@@ -162,9 +209,9 @@ export default function Home() {
         </div>
       </section>
       <section className="detail-panel">{selected && <>
-        <div className="detail-head"><div className="breadcrumb"><span>{selected.category}</span><b>/</b><span>{selected.title}</span></div><button className={`detail-star ${selected.favorite ? "on" : ""}`} onClick={() => updateSelected({ favorite: !selected.favorite })} aria-label="お気に入りを切り替え">★</button><input className="title-input" value={selected.title} onChange={(e) => updateSelected({ title: e.target.value })} aria-label="タイトル" /><textarea className="desc-input" value={selected.description} onChange={(e) => updateSelected({ description: e.target.value })} aria-label="説明" /><div className="meta-row"><span>LANGUAGE <b>{selected.language}</b></span><span>COMPLEXITY <b>{selected.complexity}</b></span><span>UPDATED <b>{selected.updatedAt}</b></span></div></div>
+        <div className="detail-head"><div className="breadcrumb"><span>{selected.category}</span><b>/</b><span>{selected.title}</span></div><button className={`detail-star ${selected.favorite ? "on" : ""}`} onClick={() => updateSelected({ favorite: !selected.favorite })} aria-label="お気に入りを切り替え">★</button><input className="title-input" value={selected.title} onChange={(e) => updateSelected({ title: e.target.value })} aria-label="タイトル" /><textarea className="desc-input" value={selected.description} onChange={(e) => updateSelected({ description: e.target.value })} aria-label="説明" /><div className="meta-row"><span>LANGUAGE <select className="detail-language" value={selected.language} onChange={(e) => updateSelected({ language: e.target.value })} aria-label="コードの言語">{languageOptions.map(({ label }) => <option key={label}>{label}</option>)}</select></span><span>COMPLEXITY <b>{selected.complexity}</b></span><span>UPDATED <b>{selected.updatedAt}</b></span></div></div>
         <div className="tabs"><button className={tab === "code" ? "active" : ""} onClick={() => setTab("code")}>コード</button><button className={tab === "note" ? "active" : ""} onClick={() => setTab("note")}>メモ</button><div className="tab-actions"><span className={["saved", "deleted", "error"].includes(syncState) ? "save-status show" : "save-status"}>{syncLabel}</span><button className="delete-button" onClick={() => void deleteSelected()}>削除</button><button onClick={copyCode}>{copied ? "コピー済み ✓" : "コピー"}</button></div></div>
-        {tab === "code" ? <div className="editor-wrap"><div className="editor-bar"><span>{selected.title.replace(/[（）\s]/g, "-").toLowerCase()}.cpp</span><span className="traffic"><i /><i /><i /></span></div><textarea className="code-editor" spellCheck={false} value={selected.code} onChange={(e) => updateSelected({ code: e.target.value })} aria-label="コードエディタ" /></div> : <div className="notes"><label htmlFor="algorithm-notes">使いどころ・注意点</label><textarea id="algorithm-notes" value={selected.description} onChange={(e) => updateSelected({ description: e.target.value })} /><label htmlFor="algorithm-tags">タグ</label><input id="algorithm-tags" value={selected.tags.join(", ")} onChange={(e) => updateSelected({ tags: e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean) })} /></div>}
+        {tab === "code" ? <div className="editor-wrap"><div className="editor-bar"><span>{codeFileName(selected.title, selected.language)}</span><span className="editor-language">{selected.language}</span><span className="traffic"><i /><i /><i /></span></div><Editor className="code-editor" textareaClassName="code-editor-input" preClassName="code-editor-highlight" textareaId="algorithm-code" value={selected.code} onValueChange={(code) => updateSelected({ code })} highlight={(code) => highlightCode(code, selected.language)} padding={20} tabSize={4} insertSpaces aria-label="コードエディタ" /></div> : <div className="notes"><label htmlFor="algorithm-notes">使いどころ・注意点</label><textarea id="algorithm-notes" value={selected.description} onChange={(e) => updateSelected({ description: e.target.value })} /><label htmlFor="algorithm-tags">タグ</label><input id="algorithm-tags" value={selected.tags.join(", ")} onChange={(e) => updateSelected({ tags: e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean) })} /></div>}
         <div className="tags">{selected.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div>
       </>}</section>
     </div>

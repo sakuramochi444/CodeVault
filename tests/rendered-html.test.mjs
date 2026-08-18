@@ -25,8 +25,9 @@ test("Cloudflare Workers がアプリをサーバーレンダリングする", a
 });
 
 test("Cloudflare D1 が唯一のアプリデータストアとして構成されている", async () => {
-  const [page, route, schema, wrangler, migration, stateMigration] = await Promise.all([
+  const [page, styles, route, schema, wrangler, migration, stateMigration] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
+    readFile(new URL("app/globals.css", root), "utf8"),
     readFile(new URL("app/api/algorithms/route.ts", root), "utf8"),
     readFile(new URL("db/schema.ts", root), "utf8"),
     readFile(new URL("wrangler.jsonc", root), "utf8"),
@@ -41,6 +42,10 @@ test("Cloudflare D1 が唯一のアプリデータストアとして構成され
   assert.match(route, /export async function DELETE/);
   assert.match(route, /delete\(algorithms\)/);
   assert.match(page, /method: "DELETE"/);
+  assert.match(page, /react-simple-code-editor/);
+  assert.match(page, /prism-csharp/);
+  assert.match(page, /label: "C#"/);
+  assert.match(styles, /\.token\.keyword/);
   assert.match(schema, /sqliteTable\("algorithms"/);
   assert.match(wrangler, /"binding": "DB"/);
   assert.match(wrangler, /"database_name": "algo-vault-db"/);

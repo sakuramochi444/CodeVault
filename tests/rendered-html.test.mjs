@@ -42,7 +42,7 @@ test("Cloudflare D1 が唯一のアプリデータストアとして構成され
   assert.match(route, /export async function DELETE/);
   assert.match(route, /delete\(algorithms\)/);
   assert.match(page, /method: "DELETE"/);
-  assert.match(page, /react-simple-code-editor/);
+  assert.match(page, /CodeEditor/);
   assert.match(page, /prism-csharp/);
   assert.match(page, /label: "C#"/);
   assert.match(styles, /\.token\.keyword/);

@@ -89,9 +89,12 @@ kbd { border:1px solid #c9c6bd; background:#efede7; padding:2px 6px; font:700 11
 .editor-bar { height:35px; display:flex; align-items:center; justify-content:space-between; padding:0 13px; color:#9d9d94; border-bottom:1px solid #363732; font:600 9px var(--font-geist-mono), monospace; }
 .editor-language { margin-left:auto; margin-right:12px; padding:3px 6px; border:1px solid #4b4c46; color:#c4c2b9; letter-spacing:.08em; text-transform:uppercase; }
 .traffic { display:flex; gap:5px; }.traffic i { width:6px; height:6px; border-radius:50%; background:#5a5b55; }.traffic i:first-child { background:var(--orange); }
-.code-editor { width:100%; height:360px; overflow:auto; background:#1e1f1c; color:#ebe9e1; font:500 12px/1.65 var(--font-geist-mono), Consolas, monospace; tab-size:4; }
-.code-editor textarea,.code-editor pre { font:inherit!important; line-height:1.65!important; tab-size:4!important; white-space:pre!important; }
-.code-editor textarea { outline:0!important; caret-color:var(--orange)!important; }
+.code-editor { position:relative; width:100%; height:360px; overflow:hidden; background:#1e1f1c; color:#ebe9e1; font:500 12px/1.65 var(--font-geist-mono), Consolas, monospace; tab-size:4; }
+.code-editor-input,.code-editor-highlight { position:absolute; inset:0; box-sizing:border-box; width:100%; height:100%; margin:0; border:0; padding:20px; overflow:auto; font:inherit; line-height:1.65; tab-size:4; white-space:pre; }
+.code-editor-highlight { pointer-events:none; color:#ebe9e1; background:transparent; scrollbar-width:none; }
+.code-editor-highlight::-webkit-scrollbar { display:none; }
+.code-editor-input { resize:none; outline:0; background:transparent; color:transparent; caret-color:var(--orange); -webkit-text-fill-color:transparent; }
+.code-editor-input::selection { background:rgba(240,113,70,.34); -webkit-text-fill-color:transparent; }
 .code-editor .token.comment,.code-editor .token.prolog,.code-editor .token.doctype,.code-editor .token.cdata { color:#777a72; }
 .code-editor .token.punctuation { color:#c7c4bb; }
 .code-editor .token.namespace { color:#9a978f; }

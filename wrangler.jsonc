@@ -1,24 +1,33 @@
 {
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "algo-vault",
-  "main": "vinext/server/fetch-handler",
-  "compatibility_date": "2026-08-18",
-  "compatibility_flags": ["nodejs_compat"],
-  "assets": {
-    "directory": "dist/client",
-    "not_found_handling": "none",
-    "binding": "ASSETS"
-  },
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "algo-vault-db",
-      "migrations_dir": "drizzle"
-    }
-  ],
-  "observability": {
-    "enabled": true,
-    "logs": { "enabled": true, "head_sampling_rate": 1 },
-    "traces": { "enabled": true, "head_sampling_rate": 0.1 }
-  }
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "algo-vault",
+	"main": "vinext/server/fetch-handler",
+	"compatibility_date": "2026-08-18",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"assets": {
+		"directory": "dist/client",
+		"not_found_handling": "none",
+		"binding": "ASSETS"
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "algo-vault-db",
+			"database_id": "f9c0c2c0-7a01-40b0-bb2f-5e4735607c8e",
+			"migrations_dir": "drizzle"
+		}
+	],
+	"observability": {
+		"enabled": true,
+		"logs": {
+			"enabled": true,
+			"head_sampling_rate": 1
+		},
+		"traces": {
+			"enabled": true,
+			"head_sampling_rate": 0.1
+		}
+	}
 }

@@ -28,17 +28,11 @@ npm run dev
 
 ## Cloudflare へのデプロイ
 
-初回のみ Wrangler で Cloudflare にログインします。
+`wrangler.jsonc` には作成済みD1データベースの `database_id` が設定されています。
+初回のみ Wrangler で Cloudflare にログインし、マイグレーションを適用します。
 
 ```bash
 npx wrangler login
-npx wrangler d1 create algo-vault-db
-```
-
-`d1 create` が返す `database_id` を `wrangler.jsonc` の `DB` 設定へ追加し、
-次を実行します。
-
-```bash
 npm run db:migrate:remote
 npm run deploy
 ```

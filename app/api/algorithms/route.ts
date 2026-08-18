@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { starterAlgorithms } from "@/db/seed";
-import { algorithms, type NewAlgorithm } from "@/db/schema";
+import { algorithms, appState, type NewAlgorithm } from "@/db/schema";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +32,19 @@ function parseAlgorithm(value: unknown, requireId: boolean): (NewAlgorithm & { i
 export async function GET() {
   const db = getDb();
   let rows = await db.select().from(algorithms).orderBy(desc(algorithms.id));
-  if (rows.length === 0) {
+  const [seedState] = await db.select().from(appState).where(eq(appState.key, "starter_data_initialized")).limit(1);
+  if (rows.length > 0 && seedState?.value !== "1") {
+    await db.insert(appState).values({ key: "starter_data_initialized", value: "1" }).onConflictDoUpdate({
+      target: appState.key,
+      set: { value: "1" },
+    });
+  }
+  if (rows.length === 0 && seedState?.value !== "1") {
     await db.insert(algorithms).values(starterAlgorithms).onConflictDoNothing();
+    await db.insert(appState).values({ key: "starter_data_initialized", value: "1" }).onConflictDoUpdate({
+      target: appState.key,
+      set: { value: "1" },
+    });
     rows = await db.select().from(algorithms).orderBy(desc(algorithms.id));
   }
   return Response.json(rows);
@@ -59,4 +70,17 @@ export async function PUT(request: Request) {
     return Response.json({ error: "対象のデータが見つかりません。" }, { status: 404 });
   }
   return Response.json(updated);
+}
+
+export async function DELETE(request: Request) {
+  const id = Number(new URL(request.url).searchParams.get("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return Response.json({ error: "削除対象が正しくありません。" }, { status: 400 });
+  }
+
+  const [deleted] = await getDb().delete(algorithms).where(eq(algorithms.id, id)).returning({ id: algorithms.id });
+  if (!deleted) {
+    return Response.json({ error: "対象のデータが見つかりません。" }, { status: 404 });
+  }
+  return new Response(null, { status: 204 });
 }

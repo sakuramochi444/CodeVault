@@ -6,7 +6,7 @@ import type { Algorithm } from "@/db/schema";
 
 const categories = ["すべて", "探索", "データ構造", "グラフ", "動的計画法", "数学", "文字列"];
 const languages = ["すべて", "C++", "Python", "Rust"];
-type SyncState = "loading" | "idle" | "saving" | "saved" | "error";
+type SyncState = "loading" | "idle" | "saving" | "deleting" | "saved" | "deleted" | "error";
 
 export default function Home() {
   const [algorithms, setAlgorithms] = useState<Algorithm[]>([]);
@@ -113,7 +113,23 @@ export default function Home() {
     if (!selected) return;
     await navigator.clipboard.writeText(selected.code); setCopied(true); window.setTimeout(() => setCopied(false), 1400);
   };
-  const syncLabel = syncState === "loading" ? "Cloudflare D1 から読込中…" : syncState === "saving" ? "Cloudflare D1 に保存中…" : syncState === "saved" ? "D1 に保存しました" : syncState === "error" ? "D1 との同期に失敗しました" : "";
+  const deleteSelected = async () => {
+    if (!selected || !window.confirm(`「${selected.title}」を削除しますか？\nこの操作は元に戻せません。`)) return;
+    const timer = saveTimers.current.get(selected.id);
+    if (timer) window.clearTimeout(timer);
+    saveTimers.current.delete(selected.id);
+    setSyncState("deleting");
+    try {
+      const response = await fetch(`/api/algorithms?id=${selected.id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const remaining = algorithms.filter((item) => item.id !== selected.id);
+      setAlgorithms(remaining);
+      setSelectedId(remaining[0]?.id ?? null);
+      setSyncState("deleted");
+      window.setTimeout(() => setSyncState((current) => current === "deleted" ? "idle" : current), 1400);
+    } catch { setSyncState("error"); }
+  };
+  const syncLabel = syncState === "loading" ? "Cloudflare D1 から読込中…" : syncState === "saving" ? "Cloudflare D1 に保存中…" : syncState === "deleting" ? "Cloudflare D1 から削除中…" : syncState === "saved" ? "D1 に保存しました" : syncState === "deleted" ? "D1 から削除しました" : syncState === "error" ? "D1 との同期に失敗しました" : "";
 
   return <main className="app-shell">
     <header className="topbar">
@@ -147,12 +163,12 @@ export default function Home() {
       </section>
       <section className="detail-panel">{selected && <>
         <div className="detail-head"><div className="breadcrumb"><span>{selected.category}</span><b>/</b><span>{selected.title}</span></div><button className={`detail-star ${selected.favorite ? "on" : ""}`} onClick={() => updateSelected({ favorite: !selected.favorite })} aria-label="お気に入りを切り替え">★</button><input className="title-input" value={selected.title} onChange={(e) => updateSelected({ title: e.target.value })} aria-label="タイトル" /><textarea className="desc-input" value={selected.description} onChange={(e) => updateSelected({ description: e.target.value })} aria-label="説明" /><div className="meta-row"><span>LANGUAGE <b>{selected.language}</b></span><span>COMPLEXITY <b>{selected.complexity}</b></span><span>UPDATED <b>{selected.updatedAt}</b></span></div></div>
-        <div className="tabs"><button className={tab === "code" ? "active" : ""} onClick={() => setTab("code")}>コード</button><button className={tab === "note" ? "active" : ""} onClick={() => setTab("note")}>メモ</button><div className="tab-actions"><span className={syncState === "saved" || syncState === "error" ? "save-status show" : "save-status"}>{syncLabel}</span><button onClick={copyCode}>{copied ? "コピー済み ✓" : "コピー"}</button></div></div>
+        <div className="tabs"><button className={tab === "code" ? "active" : ""} onClick={() => setTab("code")}>コード</button><button className={tab === "note" ? "active" : ""} onClick={() => setTab("note")}>メモ</button><div className="tab-actions"><span className={["saved", "deleted", "error"].includes(syncState) ? "save-status show" : "save-status"}>{syncLabel}</span><button className="delete-button" onClick={() => void deleteSelected()}>削除</button><button onClick={copyCode}>{copied ? "コピー済み ✓" : "コピー"}</button></div></div>
         {tab === "code" ? <div className="editor-wrap"><div className="editor-bar"><span>{selected.title.replace(/[（）\s]/g, "-").toLowerCase()}.cpp</span><span className="traffic"><i /><i /><i /></span></div><textarea className="code-editor" spellCheck={false} value={selected.code} onChange={(e) => updateSelected({ code: e.target.value })} aria-label="コードエディタ" /></div> : <div className="notes"><label htmlFor="algorithm-notes">使いどころ・注意点</label><textarea id="algorithm-notes" value={selected.description} onChange={(e) => updateSelected({ description: e.target.value })} /><label htmlFor="algorithm-tags">タグ</label><input id="algorithm-tags" value={selected.tags.join(", ")} onChange={(e) => updateSelected({ tags: e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean) })} /></div>}
         <div className="tags">{selected.tags.map((tag) => <span key={tag}>#{tag}</span>)}</div>
       </>}</section>
     </div>
     {showNew && <div className="modal-backdrop"><form className="modal" onSubmit={(event) => void addAlgorithm(event)}><div className="modal-kicker">NEW SNIPPET</div><h2>アルゴリズムを追加</h2><label>名前<input name="title" placeholder="例：最大流 Dinic" required /></label><div className="form-grid"><label>カテゴリ<select name="category">{categories.slice(1).map((cat) => <option key={cat}>{cat}</option>)}</select></label><label>言語<select name="language">{languages.slice(1).map((lang) => <option key={lang}>{lang}</option>)}</select></label></div><label>計算量<input name="complexity" placeholder="O(N log N)" /></label><div className="modal-actions"><button type="button" onClick={() => setShowNew(false)}>キャンセル</button><button className="create" type="submit">追加する →</button></div></form></div>}
-    <div className={syncState === "saved" || syncState === "error" ? "toast show" : "toast"}>{syncLabel}</div>
+    <div className={["saved", "deleted", "error"].includes(syncState) ? "toast show" : "toast"}>{syncLabel}</div>
   </main>;
 }

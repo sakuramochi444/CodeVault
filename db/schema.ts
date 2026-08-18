@@ -13,5 +13,10 @@ export const algorithms = sqliteTable("algorithms", {
   updatedAt: text("updated_at").notNull(),
 });
 
+export const appState = sqliteTable("app_state", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});
+
 export type Algorithm = typeof algorithms.$inferSelect;
 export type NewAlgorithm = typeof algorithms.$inferInsert;

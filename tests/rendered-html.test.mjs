@@ -25,20 +25,26 @@ test("Cloudflare Workers がアプリをサーバーレンダリングする", a
 });
 
 test("Cloudflare D1 が唯一のアプリデータストアとして構成されている", async () => {
-  const [page, route, schema, wrangler, migration] = await Promise.all([
+  const [page, route, schema, wrangler, migration, stateMigration] = await Promise.all([
     readFile(new URL("app/page.tsx", root), "utf8"),
     readFile(new URL("app/api/algorithms/route.ts", root), "utf8"),
     readFile(new URL("db/schema.ts", root), "utf8"),
     readFile(new URL("wrangler.jsonc", root), "utf8"),
     readFile(new URL("drizzle/0000_tan_hydra.sql", root), "utf8"),
+    readFile(new URL("drizzle/0001_wild_jack_murdock.sql", root), "utf8"),
   ]);
 
   assert.doesNotMatch(page, /localStorage|sessionStorage/);
   assert.match(page, /fetch\("\/api\/algorithms"/);
   assert.match(route, /getDb\(\)/);
   assert.match(route, /db\.insert\(algorithms\)/);
+  assert.match(route, /export async function DELETE/);
+  assert.match(route, /delete\(algorithms\)/);
+  assert.match(page, /method: "DELETE"/);
   assert.match(schema, /sqliteTable\("algorithms"/);
   assert.match(wrangler, /"binding": "DB"/);
   assert.match(wrangler, /"database_name": "algo-vault-db"/);
   assert.match(migration, /CREATE TABLE `algorithms`/);
+  assert.match(stateMigration, /CREATE TABLE `app_state`/);
+  assert.match(stateMigration, /starter_data_initialized/);
 });
